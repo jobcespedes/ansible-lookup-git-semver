@@ -17,113 +17,54 @@ DOCUMENTATION = """
                 required: True
             bump:
                 description:
-                    - increase# python 3 headers, required if submitting to Ansible
-from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
-
-DOCUMENTATION = """
-        lookup: git_semver
-        author: Job Céspedes <jobcespedes@gmail.com>
-        version_added: "2.9"
-        short_description: get/bump version from git current branch latest tag
-        requirements:
-            - semantic_version
-        description:
-            - This lookup returns/bump the version from git current branch latest tag
-        options:
-            _terms:
-                description: path of repo
-                required: True
-            bump:
-                description:
                     - increase/bump version number: major, minor, patch
                 default: ''
                 type: string
                 required: False
                 choices: ['major', 'minor', 'patch']
-"""
-
-EXAMPLES = """
-- vars:
-    version: "{{ lookup('git_semver', playbook_dir) }}"
-    next_patch_version: "{{ lookup('git_semver', playbook_dir, bump='patch') }}"
-    next_minor_version: "{{ lookup('git_semver', playbook_dir, bump='minor') }}"
-    next_major_version: "{{ lookup('git_semver', playbook_dir, bump='major') }}"
-"""
-
-RETURN = """
-_raw:
-  description:
-    - version from git current branch latest tag
-"""
-import semantic_version
-import git
-from git import Repo
-from ansible.errors import AnsibleError, AnsibleParserError
-from ansible.module_utils.six import string_types
-from ansible.plugins.lookup import LookupBase
-from ansible.utils.display import Display
-
-display = Display()
-
-class LookupModule(LookupBase):
-
-    def run(self, terms, variables=None, **kwargs):
-
-        bump = kwargs.get('bump', '').lower()
-        if not isinstance(bump, string_types) or bump not in ['patch', 'minor', 'major', '']:
-            raise AnsibleError('"bump" must be a string and one of "patch", "minor" or "major", not %s' % bump)
-
-        ret = []
-        for term in terms:
-            display.debug("Repo path: %s" % term)
-            repo = Repo(term)
-
-            display.vvvv(u"Git semver lookup using %s as repo" % repo)
-            try:
-                if repo:
-                    # Check this is a git repo
-                    assert not repo.bare
-
-                    # Get tag
-                    version = repo.git.describe('--tags', '--abbrev=0')
-
-                    # Validate semver
-                    if not semantic_version.validate(version):
-                        raise AnsibleError('Tag "%s" is not a proper semantic version' % version)
-
-                    # bump
-                    if bump:
-                        semver = semantic_version.Version(version)
-                        version = getattr(semver, 'next_'+ bump)()
-
-                    # return
-                    ret.append(version)
-                else:
-                    raise AnsibleParserError()
-            except AnsibleParserError:
-                raise AnsibleError("could not get version in lookup: %s" % term)
-
-        return ret
-/bump version number: major, minor, patch
-                default: ''
+            want:
+                description:
+                    - return str,list or dict
+                default: str
                 type: string
                 required: False
-                choices: ['major', 'minor', 'patch']
+                choices: ['str', 'dict', 'list']
 """
 
 EXAMPLES = """
 - vars:
-    version: "{{ lookup('git_semver', playbook_dir) }}"
-    next_patch_version: "{{ lookup('git_semver', playbook_dir, bump='patch') }}"
-    next_minor_version: "{{ lookup('git_semver', playbook_dir, bump='minor') }}"
-    next_major_version: "{{ lookup('git_semver', playbook_dir, bump='major') }}"
+    version: "{{ lookup('git_semver', '/tmp/borrar') }}"
+    version_next_patch: "{{ lookup('git_semver', '/tmp/borrar', bump='patch') }}"
+    version_next_minor: "{{ lookup('git_semver', '/tmp/borrar', bump='minor') }}"
+    version_next_major: "{{ lookup('git_semver', '/tmp/borrar', bump='major') }}"
+    version_list: "{{ lookup('git_semver', '/tmp/borrar', want='list') }}"
+    version_dict: "{{ lookup('git_semver', '/tmp/borrar', want='dict') }}"
+  debug:
+    msg:  |
+      {{ version }}
+      {{ version_next_patch }}
+      {{ version_next_minor }}
+      {{ version_next_major }}
+      {{ version_list }}
+      {{ version_dict}}
 """
 
 RETURN = """
 _raw:
-  description:
-    - version from git current branch latest tag
+    description:
+      - version from git current branch latest tag
+    type: str
+_dict:
+    description:
+      - dictionary with break down version from git current branch latest tag:
+        {'full','major','minor','patch','prerelease','build'}
+    type: dcit
+_list:
+    description:
+      - list with break down version from git current branch latest tag:
+        ['full','major','minor','patch','prerelease','build']
+    type: list
+
 """
 import semantic_version
 import git
@@ -133,7 +74,9 @@ from ansible.module_utils.six import string_types
 from ansible.plugins.lookup import LookupBase
 from ansible.utils.display import Display
 
+
 display = Display()
+
 
 class LookupModule(LookupBase):
 
@@ -141,7 +84,13 @@ class LookupModule(LookupBase):
 
         bump = kwargs.get('bump', '').lower()
         if not isinstance(bump, string_types) or bump not in ['patch', 'minor', 'major', '']:
-            raise AnsibleError('"bump" must be a string and one of "patch", "minor" or "major", not %s' % bump)
+            raise AnsibleError(
+                '"bump" must be a string and one of "patch", "minor" or "major", not %s' % bump)
+
+        want = kwargs.get('want', 'str').lower()
+        if not isinstance(want, string_types) or want not in ['str', 'dict', 'list']:
+            raise AnsibleError(
+                '"want" must be a string and one of "str", "dict" or "list", not %s' % want)
 
         ret = []
         for term in terms:
@@ -155,22 +104,42 @@ class LookupModule(LookupBase):
                     assert not repo.bare
 
                     # Get tag
-                    version = repo.git.describe('--tags', '--abbrev=0')
+                    v = repo.git.describe('--tags', '--abbrev=0')
 
                     # Validate semver
-                    if not semantic_version.validate(version):
-                        raise AnsibleError('Tag "%s" is not a proper semantic version' % version)
+                    if not semantic_version.validate(v):
+                        raise AnsibleError(
+                            'Tag "%s" is not a proper semantic version' % v)
 
                     # bump
+                    v = semantic_version.Version(v)
                     if bump:
-                        semver = semantic_version.Version(version)
-                        version = getattr(semver, 'next_'+ bump)()
+                        v = getattr(v, 'next_' + bump)()
 
-                    # return
-                    ret.append(version)
+                    # return dict
+                    if want == 'dict':
+                        v = {
+                            "full": str(v),
+                            "major": v.major,
+                            "minor": v.minor,
+                            "patch": v.patch,
+                            "prerelease": '.'.join(v.prerelease),
+                            "build": '.'.join(v.build)
+                        }
+
+                    # return list
+                    if want == 'list':
+                        v = [v] + list(v)
+
+                    # return str
+                    if want == 'str':
+                        v = str(v)
+
+                    ret.append(v)
                 else:
                     raise AnsibleParserError()
             except AnsibleParserError:
-                raise AnsibleError("could not get version in lookup: %s" % term)
+                raise AnsibleError(
+                    "could not get version in lookup: %s" % term)
 
         return ret
