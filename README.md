@@ -14,14 +14,18 @@ Drop it in the respective directory
 ## Example
 ```yaml
 - vars:
-    version: "{{ lookup('git_semver', playbook_dir) }}"
-    next_patch_version: "{{ lookup('git_semver', playbook_dir, bump='patch') }}"
-    next_minor_version: "{{ lookup('git_semver', playbook_dir, bump='minor') }}"
-    next_major_version: "{{ lookup('git_semver', playbook_dir, bump='major') }}"
+    version: "{{ lookup('git_semver', playbook_dir') }}"
+    version_next_patch: "{{ lookup('git_semver', playbook_dir, bump='patch') }}"
+    version_next_minor: "{{ lookup('git_semver', playbook_dir, bump='minor') }}"
+    version_next_major: "{{ lookup('git_semver', playbook_dir, bump='major') }}"
+    version_list: "{{ lookup('git_semver', playbook_dir, want='list') }}"
+    version_dict: "{{ lookup('git_semver', playbook_dir, want='dict') }}"
   debug:
-     msg: |
-        {{version}}
-        {{next_patch_version}}
-        {{next_minor_version}}
-        {{next_major_version}}
+    msg:  |
+      {{ version }}
+      {{ version_next_patch }}
+      {{ version_next_minor }}
+      {{ version_next_major }}
+      {{ version_list }}
+      {{ version_dict}}
 ```
