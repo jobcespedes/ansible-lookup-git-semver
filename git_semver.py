@@ -33,12 +33,12 @@ DOCUMENTATION = """
 
 EXAMPLES = """
 - vars:
-    version: "{{ lookup('git_semver', '/tmp/borrar') }}"
-    version_next_patch: "{{ lookup('git_semver', '/tmp/borrar', bump='patch') }}"
-    version_next_minor: "{{ lookup('git_semver', '/tmp/borrar', bump='minor') }}"
-    version_next_major: "{{ lookup('git_semver', '/tmp/borrar', bump='major') }}"
-    version_list: "{{ lookup('git_semver', '/tmp/borrar', want='list') }}"
-    version_dict: "{{ lookup('git_semver', '/tmp/borrar', want='dict') }}"
+    version: "{{ lookup('git_semver', playbook_dir') }}"
+    version_next_patch: "{{ lookup('git_semver', playbook_dir, bump='patch') }}"
+    version_next_minor: "{{ lookup('git_semver', playbook_dir, bump='minor') }}"
+    version_next_major: "{{ lookup('git_semver', playbook_dir, bump='major') }}"
+    version_list: "{{ lookup('git_semver', playbook_dir, want='list') }}"
+    version_dict: "{{ lookup('git_semver', playbook_dir, want='dict') }}"
   debug:
     msg:  |
       {{ version }}
