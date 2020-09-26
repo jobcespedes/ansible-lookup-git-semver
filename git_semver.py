@@ -66,6 +66,7 @@ _list:
     type: list
 
 """
+import os
 import semantic_version
 import git
 from git import Repo
@@ -104,7 +105,16 @@ class LookupModule(LookupBase):
                     assert not repo.bare
 
                     # Get tag
-                    v = repo.git.describe('--tags', '--abbrev=0')
+                    try:
+                        v = repo.git.describe('--tags', '--abbrev=0')
+                    except git.GitCommandError as e:
+                        # initialize semantic version if error code 128
+                        if e.status == 128 and ('No names' in e.stderr or 'No tags' in e.stderr):
+                            v = '0.0.0' + '-SNAPSHOT-' + \
+                                os.getenv('BRANCH_NAME', repo.git.branch('--show-current')) + \
+                                '-' + os.getenv('BUILD_ID', repo.git.describe('--always'))
+                        else:
+                            raise
 
                     # Validate semver
                     if not semantic_version.validate(v):
