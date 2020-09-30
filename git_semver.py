@@ -34,17 +34,17 @@ DOCUMENTATION = """
 EXAMPLES = """
 - vars:
     version: "{{ lookup('git_semver', playbook_dir') }}"
-    version_next_patch: "{{ lookup('git_semver', playbook_dir, bump='patch') }}"
-    version_next_minor: "{{ lookup('git_semver', playbook_dir, bump='minor') }}"
-    version_next_major: "{{ lookup('git_semver', playbook_dir, bump='major') }}"
+    version_image_patch: "{{ lookup('git_semver', playbook_dir, bump='patch') }}"
+    version_image_minor: "{{ lookup('git_semver', playbook_dir, bump='minor') }}"
+    version_image_major: "{{ lookup('git_semver', playbook_dir, bump='major') }}"
     version_list: "{{ lookup('git_semver', playbook_dir, want='list') }}"
     version_dict: "{{ lookup('git_semver', playbook_dir, want='dict') }}"
   debug:
     msg:  |
       {{ version }}
-      {{ version_next_patch }}
-      {{ version_next_minor }}
-      {{ version_next_major }}
+      {{ version_image_patch }}
+      {{ version_image_minor }}
+      {{ version_image_major }}
       {{ version_list }}
       {{ version_dict}}
 """
@@ -115,6 +115,10 @@ class LookupModule(LookupBase):
                                 '-' + os.getenv('BUILD_ID', repo.git.describe('--always'))
                         else:
                             raise
+
+                    # check v prefix
+                    if v.startswith('v'):
+                        v = v[1:]
 
                     # Validate semver
                     if not semantic_version.validate(v):
