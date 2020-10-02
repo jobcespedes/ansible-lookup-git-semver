@@ -33,7 +33,7 @@ DOCUMENTATION = """
 
 EXAMPLES = """
 - vars:
-    version: "{{ lookup('git_semver', playbook_dir') }}"
+    version: "{{ lookup('git_semver', playbook_dir) }}"
     version_image_patch: "{{ lookup('git_semver', playbook_dir, bump='patch') }}"
     version_image_minor: "{{ lookup('git_semver', playbook_dir, bump='minor') }}"
     version_image_major: "{{ lookup('git_semver', playbook_dir, bump='major') }}"
@@ -101,20 +101,32 @@ class LookupModule(LookupBase):
             display.vvvv(u"Git semver lookup using %s as repo" % repo)
             try:
                 if repo:
-                    # Check this is a git repo
+                    # gheck this is a git repo
                     assert not repo.bare
 
-                    # Get tag
+                    # get branch name
+                    branch = repo.git.branch('--show-current')
+
+                    # get tag
                     try:
+                        # get tag
                         v = repo.git.describe('--tags', '--abbrev=0')
+                        # set tag as rev
+                        rev = v
                     except git.GitCommandError as e:
                         # initialize semantic version if error code 128
                         if e.status == 128 and ('No names' in e.stderr or 'No tags' in e.stderr):
+                            # set default initial semver
                             v = '0.0.0' + '-SNAPSHOT-' + \
-                                os.getenv('BRANCH_NAME', repo.git.branch('--show-current')) + \
+                                os.getenv('BRANCH_NAME', branch) + \
                                 '-' + os.getenv('BUILD_ID', repo.git.describe('--always'))
+                            # set HEAD as rev
+                            rev = 'HEAD'
                         else:
                             raise
+
+                    # set commit
+                    commit = repo.git.rev_parse(rev)
 
                     # check v prefix
                     if v.startswith('v'):
@@ -138,12 +150,14 @@ class LookupModule(LookupBase):
                             "minor": v.minor,
                             "patch": v.patch,
                             "prerelease": '.'.join(v.prerelease),
-                            "build": '.'.join(v.build)
+                            "build": '.'.join(v.build),
+                            "branch": branch,
+                            "commit": commit
                         }
 
                     # return list
                     if want == 'list':
-                        v = [v] + list(v)
+                        v = [str(v)] + list(v) + [branch] + [commit]
 
                     # return str
                     if want == 'str':
