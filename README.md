@@ -14,7 +14,7 @@ Drop it in the respective directory
 ## Example
 ```yaml
 - vars:
-    version: "{{ lookup('git_semver', playbook_dir') }}"
+    version: "{{ lookup('git_semver', playbook_dir) }}"
     version_next_patch: "{{ lookup('git_semver', playbook_dir, bump='patch') }}"
     version_next_minor: "{{ lookup('git_semver', playbook_dir, bump='minor') }}"
     version_next_major: "{{ lookup('git_semver', playbook_dir, bump='major') }}"
