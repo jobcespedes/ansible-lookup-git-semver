@@ -1,5 +1,5 @@
 # git_semver
-Ansible lookup plugin that returns/bumps the version from git current branch latest tag
+Ansible lookup plugin that returns/bumps the version from git latest branch tag. Optionally, it could return tag's branch and commit
 
 ## Requirements
 - python git
